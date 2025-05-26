@@ -27,24 +27,44 @@ class MyPantryController extends GetxController {
 
   // Fetch pantry items from API
   Future<void> fetchPantryItems() async {
-    final storedToken = GetStorage().read('auth_token'); // Get the stored token
+    final box = GetStorage();
+    final storedToken = box.read('auth_token');
+
     if (storedToken == null) {
-      print('No auth token found');
+      // Guest user: Load from local storage
+      print('Guest user detected');
+      final guestIngredientNames = box.read('guest_ingredient_names') ?? [];
+      final guestIngredientIds = box.read('guest_ingredient_ids') ?? [];
+
+      print('Guest ingredient names: $guestIngredientNames');
+      print('Guest ingredient ids: $guestIngredientIds');
+
+      if (guestIngredientNames is List && guestIngredientIds is List) {
+        myPantryItems.value = List.generate(guestIngredientNames.length, (
+          index,
+        ) {
+          return {
+            'id':
+                guestIngredientIds.length > index
+                    ? guestIngredientIds[index]
+                    : null,
+            'name': guestIngredientNames[index]
+          };
+        });
+      }
       return;
     }
 
+    // Logged-in user: Fetch from backend
     final response = await http.get(
       Uri.parse('http://localhost:4000/pantries/mypantry'),
-      headers: {
-        'Authorization': 'Bearer $storedToken',
-      }, // Use the token for authentication
+      headers: {'Authorization': 'Bearer $storedToken'},
     );
 
     if (response.statusCode == 200) {
       final pantryData = jsonDecode(response.body);
       final List<dynamic> ingredients = pantryData['pantry']['ingredients'];
 
-      // Update the pantry items with data from the API
       myPantryItems.value = List<Map<String, dynamic>>.from(
         ingredients.map(
           (item) => {
@@ -68,12 +88,48 @@ class MyPantryController extends GetxController {
 
   // Remove item from pantry
   Future<void> removeItem(Map<String, dynamic> item) async {
-    final storedToken = GetStorage().read('auth_token');
+    final box = GetStorage();
+    final storedToken = box.read('auth_token');
+
     if (storedToken == null) {
-      print('No auth token found');
+      // Guest user: Remove from local storage
+      print('Guest user: removing item');
+
+      final List<dynamic> guestIngredientIds =
+          box.read('guest_ingredient_ids') ?? [];
+      final List<dynamic> guestIngredientNames =
+          box.read('guest_ingredient_names') ?? [];
+
+      final int indexToRemove = guestIngredientNames.indexOf(item['name']);
+
+      if (indexToRemove != -1) {
+        guestIngredientNames.removeAt(indexToRemove);
+        if (guestIngredientIds.length > indexToRemove) {
+          guestIngredientIds.removeAt(indexToRemove);
+        }
+
+        // Update storage
+        box.write('guest_ingredient_ids', guestIngredientIds);
+        box.write('guest_ingredient_names', guestIngredientNames);
+
+        // Update UI
+        myPantryItems.removeWhere((element) => element['name'] == item['name']);
+
+        Get.snackbar(
+          'Removed',
+          '${item['name']} removed from guest pantry.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: const Color.fromARGB(235, 255, 80, 80),
+          colorText: Colors.black,
+        );
+      } else {
+        print('Item not found in guest pantry');
+      }
+
       return;
     }
 
+    // Logged-in user: Delete from backend
     final response = await http.delete(
       Uri.parse('http://localhost:4000/pantry_ingredients'),
       headers: {

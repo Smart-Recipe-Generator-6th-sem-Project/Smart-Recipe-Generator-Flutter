@@ -11,6 +11,8 @@ class Pantry extends StatefulWidget {
 }
 
 class _PantryViewState extends State<Pantry> {
+  List<String> guestPantryItems = [];
+  List<int> guestPantryIngredientIds = [];
   int currentPage = 1;
   final int pageSize = 100;
 
@@ -86,23 +88,29 @@ class _PantryViewState extends State<Pantry> {
   }
 
   Future<void> fetchMyPantryItems() async {
-    final response = await http.get(
-      Uri.parse('http://localhost:4000/pantries/mypantry'),
-      headers: {'Authorization': 'Bearer $storedToken'},
-    );
+    if (storedToken != null) {
+      final response = await http.get(
+        Uri.parse('http://localhost:4000/pantries/mypantry'),
+        headers: {'Authorization': 'Bearer $storedToken'},
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final ingredientsInPantry = data['pantry']['ingredients'] as List;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final ingredientsInPantry = data['pantry']['ingredients'] as List;
 
-      setState(() {
-        myPantryItems =
-            ingredientsInPantry
-                .map<String>((ingredient) => ingredient['name'])
-                .toList();
-      });
+        setState(() {
+          myPantryItems =
+              ingredientsInPantry
+                  .map<String>((ingredient) => ingredient['name'])
+                  .toList();
+        });
+      } else {
+        print('Failed to fetch pantry items');
+      }
     } else {
-      print('Failed to fetch pantry items');
+      setState(() {
+        myPantryItems = guestPantryItems;
+      });
     }
   }
 
@@ -133,6 +141,7 @@ class _PantryViewState extends State<Pantry> {
   }
 
   void confirmPantryAddition() async {
+    print("Stored token: $storedToken");
     // Find ingredient IDs based on the selected ingredient names
     final selectedIngredientIds =
         ingredients
@@ -140,36 +149,74 @@ class _PantryViewState extends State<Pantry> {
             .map<int>((ingredient) => ingredient['id'])
             .toList();
 
-    if (selectedIngredientIds.isNotEmpty) {
-      // Prepare the request body
+    final box = GetStorage();
+    box.write('guest_ingredient_ids', selectedIngredientIds);
+    box.write('guest_ingredient_names', guestPantryItems);
+
+    if (selectedIngredientIds.isEmpty) return;
+    
+    if (storedToken != null) {
+      // User is logged in — send to backend
       final body = jsonEncode({'ingredient_ids': selectedIngredientIds});
 
-      // Send the request to the pantry API
       final response = await http.post(
         Uri.parse('http://localhost:4000/pantry_ingredients'),
-        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $storedToken'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $storedToken',
+        },
         body: body,
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final pantryData = jsonDecode(response.body);
 
-        // Optionally update the UI with the response from the pantry API
         setState(() {
           myPantryItems.addAll(selectedItems);
-          selectedItems.clear(); // Clear selected items after adding
+          selectedItems.clear();
         });
 
-        // Show a success message
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(pantryData['message']),backgroundColor: Colors.green));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(pantryData['message']),
+            backgroundColor: Colors.green,
+          ),
+        );
       } else {
-        // Handle failure
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Failed to add to pantry')));
       }
+    } else {
+      print("Selected ingredient IDs: $selectedIngredientIds");
+      print("Selected items: $selectedItems");
+      print(
+        "Before add -> guestPantryIngredientIds: $guestPantryIngredientIds",
+      );
+      print("Before add -> guestPantryItems: $guestPantryItems");
+
+      // Guest user — update local state only
+      setState(() {
+        guestPantryItems.addAll(
+          selectedItems.where((item) => !guestPantryItems.contains(item)),
+        );
+        guestPantryIngredientIds.addAll(
+          selectedIngredientIds.where(
+            (id) => !guestPantryIngredientIds.contains(id),
+          ),
+        );
+        selectedItems.clear();
+      });
+
+      print("After add -> guestPantryIngredientIds: $guestPantryIngredientIds");
+      print("After add -> guestPantryItems: $guestPantryItems");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Ingredients added to your guest pantry.'),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 

@@ -46,15 +46,39 @@ class SeeRecipeController extends GetxController {
     isLoading.value = true;
 
     try {
-      final response = await http.get(
-        Uri.parse(
-          'http://localhost:4000/recipes/generate_recipes?limit=$limit&offset=$offset',
-        ),
-        headers: {
-          'Authorization': 'Bearer $authToken',
-          'Content-Type': 'application/json',
-        },
-      );
+      http.Response response;
+
+      if (authToken.isNotEmpty) {
+        // ✅ Logged-in user — GET request
+        response = await http.get(
+          Uri.parse(
+            'http://localhost:4000/recipes/generate_recipes?limit=$limit&offset=$offset',
+          ),
+          headers: {
+            'Authorization': 'Bearer $authToken',
+            'Content-Type': 'application/json',
+          },
+        );
+      } else {
+        // ✅ Guest user — POST request with ingredient_ids
+        final box = GetStorage();
+        final List<dynamic> guestIds = box.read('guest_ingredient_ids') ?? [];
+        print("Guest Ingredient ids: ${guestIds}");
+
+        if (guestIds.isEmpty) {
+          print('No guest pantry ingredients available.');
+          isLoading.value = false;
+          return;
+        }
+
+        response = await http.post(
+          Uri.parse('http://localhost:4000/recipes/generate_recipes?limit=$limit&offset=$offset'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'ingredient_ids': guestIds
+          }),
+        );
+      }
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
