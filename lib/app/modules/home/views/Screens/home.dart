@@ -26,7 +26,7 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    fetchRecipes(limit: 10, offset: 10).then((recipes) {
+    fetchRecipes(limit: 10).then((recipes) {
       setState(() {
         allRecipes = recipes;
       });
@@ -240,58 +240,58 @@ class _HomeState extends State<Home> {
                         onSubmitted: (_) => _searchRecipes(),
                       ),
                     ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _ingredientController,
-                              decoration: InputDecoration(
-                                hintText: 'Add ingredient to pantry',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: _addIngredient,
-                            child: Icon(Icons.add),
-                            style: ElevatedButton.styleFrom(
-                              shape: CircleBorder(),
-                              padding: EdgeInsets.all(12),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.all(16),
-                      child: ElevatedButton(
-                        onPressed: _findRecipesFromPantry,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.restaurant),
-                            SizedBox(width: 8),
-                            Text('What Can I Make Now?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
+                    // Padding(
+                    //   padding: EdgeInsets.symmetric(horizontal: 16),
+                    //   child: Row(
+                    //     children: [
+                    //       Expanded(
+                    //         child: TextField(
+                    //           controller: _ingredientController,
+                    //           decoration: InputDecoration(
+                    //             hintText: 'Add ingredient to pantry',
+                    //             border: OutlineInputBorder(
+                    //               borderRadius: BorderRadius.circular(10),
+                    //             ),
+                    //             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    //           ),
+                    //         ),
+                    //       ),
+                    //       SizedBox(width: 8),
+                    //       ElevatedButton(
+                    //         onPressed: _addIngredient,
+                    //         child: Icon(Icons.add),
+                    //         style: ElevatedButton.styleFrom(
+                    //           shape: CircleBorder(),
+                    //           padding: EdgeInsets.all(12),
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
+                    // Padding(
+                    //   padding: EdgeInsets.all(16),
+                    //   child: ElevatedButton(
+                    //     onPressed: _findRecipesFromPantry,
+                    //     child: Row(
+                    //       mainAxisAlignment: MainAxisAlignment.center,
+                    //       children: [
+                    //         Icon(Icons.restaurant),
+                    //         SizedBox(width: 8),
+                    //         Text('What Can I Make Now?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    //       ],
+                    //     ),
+                    //     style: ElevatedButton.styleFrom(
+                    //       padding: EdgeInsets.symmetric(vertical: 16),
+                    //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    //     ),
+                    //   ),
+                    // ),
 
                     // 🧾 Show possible recipes banner if pantry has items
                     _buildPossibleRecipeBanner(),
 
-                    if (isLoggedIn) _buildRecipeSection('Based on Your Past Preferences', allRecipes),
-                    _buildRecipeSection('Discover Recipes', allRecipes),
+                    if (isLoggedIn) _buildRecipeSection('Discover Recipes', allRecipes),
+                    _buildRecipeSection('Based on Your Past Preferences', allRecipes),
                     SizedBox(height: 24),
                   ],
                 ),
