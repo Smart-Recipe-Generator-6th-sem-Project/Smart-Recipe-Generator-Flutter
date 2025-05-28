@@ -9,7 +9,9 @@ import 'package:http/http.dart' as http;
 bool isLoggedIn = true;
 
 List<Recipe> allRecipes = [];
+List<Recipe> trendingRecipes = [];
 bool isLoading = false;
+bool isLoadingTrending = false;
  
 class Home extends StatefulWidget {
   @override
@@ -31,6 +33,7 @@ class _HomeState extends State<Home> {
         allRecipes = recipes;
       });
     });
+    fetchTrendingRecipes();
   }
 
   Future<List<Recipe>> fetchRecipes({int limit = 10, int offset = 0}) async {
@@ -46,6 +49,38 @@ class _HomeState extends State<Home> {
       throw Exception('Failed to fetch recipes');
     }
   }
+
+  Future<void> fetchTrendingRecipes({int limit = 10, int offset = 0}) async {
+      setState(() {
+        isLoadingTrending = true; // loading starts
+      });
+
+      final uri = Uri.parse(
+        'http://localhost:4000/recipes/trending_recipes',
+      ).replace(queryParameters: {'limit': '$limit', 'offset': '$offset'});
+
+      try {
+        final response = await http.get(uri);
+        if (response.statusCode == 200) {
+          final List<dynamic> data = jsonDecode(response.body);
+
+          setState(() {
+            trendingRecipes = data.map((json) => Recipe.fromJson(json)).toList();
+            isLoadingTrending = false; // loading ends
+          });
+        } else {
+          print('Failed to load trending recipes: ${response.statusCode}');
+          setState(() {
+            isLoadingTrending = false;
+          });
+        }
+      } catch (e) {
+        print('Error fetching trending recipes: $e');
+        setState(() {
+          isLoadingTrending = false;
+        });
+      }
+    }
 
   void _addIngredient() {
     if (_ingredientController.text.isNotEmpty) {
@@ -290,9 +325,24 @@ class _HomeState extends State<Home> {
                     // 🧾 Show possible recipes banner if pantry has items
                     _buildPossibleRecipeBanner(),
 
-                    if (isLoggedIn) _buildRecipeSection('Discover Recipes', allRecipes),
-                    _buildRecipeSection('Based on Your Past Preferences', allRecipes),
-                    SizedBox(height: 24),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (isLoggedIn)
+                          _buildRecipeSection('Discover Recipes', allRecipes),
+                        isLoadingTrending
+                            ? Center(child: CircularProgressIndicator())
+                            : _buildRecipeSection(
+                              'Trending Recipes',
+                              trendingRecipes,
+                            ),
+                        _buildRecipeSection(
+                          'Based on Your Past Preferences',
+                          allRecipes,
+                        ),
+                        SizedBox(height: 24),
+                      ],
+                    ),
                   ],
                 ),
               ),
