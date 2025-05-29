@@ -7,10 +7,17 @@ import '../controllers/see_recipe_controller.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-class FullRecipeView extends StatelessWidget {
+class FullRecipeView extends StatefulWidget {
   final RecipeData recipeData;
 
   const FullRecipeView({super.key, required this.recipeData});
+
+  @override
+  State<FullRecipeView> createState() => _FullRecipeViewState();
+}
+
+class _FullRecipeViewState extends State<FullRecipeView> {
+  final Set<String> addedIngredients = {};
 
   Future<void> addToShoppingList(String itemName) async {
     try {
@@ -25,13 +32,23 @@ class FullRecipeView extends StatelessWidget {
         body: jsonEncode({"ingredient_name": itemName}),
       );
 
+      final Map<String, dynamic> resBody = jsonDecode(postRes.body);
+
       if (postRes.statusCode == 200 || postRes.statusCode == 201) {
+        setState(() {
+          addedIngredients.add(itemName);
+        });
         Get.snackbar("Success", '"$itemName" added to cart.');
         final cartController = Get.find<CartController>();
         await cartController.fetchCartIngredients();
+      } else if (postRes.statusCode == 422 &&
+          resBody['message']?.contains("already in cart") == true) {
+        setState(() {
+          addedIngredients.add(itemName);
+        });
+        Get.snackbar("Info", resBody['message']);
       } else {
-        final errorMessage = utf8.decode(postRes.bodyBytes);
-        Get.snackbar("Error", 'Failed to add "$itemName": $errorMessage');
+        Get.snackbar("Error", resBody['message'] ?? 'Something went wrong.');
       }
     } catch (e) {
       print("Add to cart error: $e");
@@ -42,7 +59,7 @@ class FullRecipeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final recipe = recipeData.recipe;
+    final recipe = widget.recipeData.recipe;
 
     return Scaffold(
       appBar: AppBar(
@@ -120,25 +137,43 @@ class FullRecipeView extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       ...recipe.ingredients.map((ingredient) {
-                        final isAvailable = recipeData.matchingIngredients.contains(ingredient.name);
+                        final isAvailable = widget.recipeData.matchingIngredients.contains(ingredient.name);
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6.0),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Icon(
-                                isAvailable ? Icons.check_circle : Icons.remove_circle_outline,
+                                isAvailable
+                                    ? Icons.check_circle
+                                    : Icons.remove_circle_outline,
                                 size: 18,
-                                color: isAvailable ? Colors.green : Colors.orange,
+                                color:
+                                    isAvailable ? Colors.green : Colors.orange,
                               ),
                               const SizedBox(width: 8),
                               Expanded(child: Text(ingredient.name)),
                               if (!isAvailable)
                                 TextButton.icon(
-                                  onPressed: () => addToShoppingList(ingredient.name),
-                                  icon: const Icon(Icons.add_shopping_cart, size: 16),
-                                  label: const Text("Add"),
-                                  style: TextButton.styleFrom(foregroundColor: Colors.teal),
+                                  onPressed:
+                                      addedIngredients.contains(ingredient.name)
+                                          ? null
+                                          : () => addToShoppingList(
+                                            ingredient.name,
+                                          ),
+                                  icon: const Icon(
+                                    Icons.add_shopping_cart,
+                                    size: 16,
+                                  ),
+                                  label: Text(
+                                    addedIngredients.contains(ingredient.name)
+                                        ? "Added"
+                                        : "Add",
+                                  ),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.teal,
+                                    disabledForegroundColor: Colors.grey,
+                                  ),
                                 ),
                             ],
                           ),
