@@ -108,14 +108,68 @@ class _HomeState extends State<Home> {
     }
   }
 
-  void _findRecipesFromPantry() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Finding recipes from your pantry ingredients...'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
+void _findRecipesFromPantry() {
+  String _selectedType = 'Both'; // Default selection
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text('Select Recipe Type'),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<String>(
+                  title: Text('Vegetarian'),
+                  value: 'Veg',
+                  groupValue: _selectedType,
+                  onChanged: (value) {
+                    setState(() => _selectedType = value!);
+                  },
+                ),
+                RadioListTile<String>(
+                  title: Text('Non-Vegetarian'),
+                  value: 'NonVeg',
+                  groupValue: _selectedType,
+                  onChanged: (value) {
+                    setState(() => _selectedType = value!);
+                  },
+                ),
+                RadioListTile<String>(
+                  title: Text('Both'),
+                  value: 'Both',
+                  groupValue: _selectedType,
+                  onChanged: (value) {
+                    setState(() => _selectedType = value!);
+                  },
+                ),
+                SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Close the dialog
+                    // Call your recipe fetching logic here
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Showing $_selectedType recipes...'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    // You can now pass _selectedType to filter logic
+                  },
+                  child: Text('Show Recipes'),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+
 
   Widget _buildRecipeCard(Recipe recipe) {
     return GestureDetector(
@@ -303,24 +357,24 @@ class _HomeState extends State<Home> {
                     //     ],
                     //   ),
                     // ),
-                    // Padding(
-                    //   padding: EdgeInsets.all(16),
-                    //   child: ElevatedButton(
-                    //     onPressed: _findRecipesFromPantry,
-                    //     child: Row(
-                    //       mainAxisAlignment: MainAxisAlignment.center,
-                    //       children: [
-                    //         Icon(Icons.restaurant),
-                    //         SizedBox(width: 8),
-                    //         Text('What Can I Make Now?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    //       ],
-                    //     ),
-                    //     style: ElevatedButton.styleFrom(
-                    //       padding: EdgeInsets.symmetric(vertical: 16),
-                    //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    //     ),
-                    //   ),
-                    // ),
+                    Padding(
+                      padding: EdgeInsets.all(16),
+                      child: ElevatedButton(
+                        onPressed: _findRecipesFromPantry,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.restaurant),
+                            SizedBox(width: 8),
+                            Text('What Can I Make Now?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
 
                     // 🧾 Show possible recipes banner if pantry has items
                     _buildPossibleRecipeBanner(),

@@ -1,23 +1,70 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:smart_recipe_generator_flutter/app/modules/recipe_detail/views/favorite_icon_button.dart';
+import 'package:smart_recipe_generator_flutter/app/modules/home/controllers/cart_controller.dart';
 import '../controllers/see_recipe_controller.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class FullRecipeView extends StatelessWidget {
   final RecipeData recipeData;
 
   const FullRecipeView({super.key, required this.recipeData});
+Future<void> addToShoppingList(String itemName) async {
+  try {
+    // 1. Get stored token
+    String? storedToken = GetStorage().read('auth_token');
 
-  void addToShoppingList(String item) {
-    Get.snackbar(
-      "Added",
-      '"$item" added to shopping list',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.green.withOpacity(0.9),
-      colorText: Colors.white,
-      icon: const Icon(Icons.check, color: Colors.white),
+    // 2. Fetch ingredients list with auth (optional)
+    final response = await http.get(
+      Uri.parse('http://localhost:4000/ingredients?limit=200&offset=0'),
+      headers: {
+        'Authorization': 'Bearer $storedToken',
+      },
     );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> allIngredients = jsonDecode(response.body);
+
+      // 3. Match ingredient name
+      final matched = allIngredients.firstWhere(
+        (i) => i['name'].toLowerCase() == itemName.toLowerCase(),
+        orElse: () => null,
+      );
+
+      if (matched == null) {
+        Get.snackbar("Not Found", '"$itemName" not found.');
+        return;
+      }
+
+      // 4. Send POST request to cart_ingredients with Authorization
+      final postRes = await http.post(
+        Uri.parse('http://localhost:4000/cart_ingredients'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $storedToken',
+        },
+        body: jsonEncode({"ingredient_name": itemName}),
+      );
+
+      if (postRes.statusCode == 200 || postRes.statusCode == 201) {
+        Get.snackbar("Success", '"$itemName" added to cart.');
+        final cartController = Get.find<CartController>();
+        await cartController.fetchCartIngredients();
+      } else {
+        final errorMessage = utf8.decode(postRes.bodyBytes);
+        Get.snackbar("Error", 'Failed to add "$itemName": $errorMessage');
+      }
+    } else {
+      Get.snackbar("Error", "Could not fetch ingredients list.");
+    }
+  } catch (e) {
+    print("Add to cart error: $e");
+    Get.snackbar("Error", "Something went wrong.");
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +92,6 @@ class FullRecipeView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              /// 🔹 **Recipe Image**
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: Image.network(
@@ -61,19 +107,13 @@ class FullRecipeView extends StatelessWidget {
                         color: Colors.grey[300],
                       ),
                       child: const Center(
-                        child: Icon(
-                          Icons.restaurant,
-                          size: 60,
-                          color: Colors.grey,
-                        ),
+                        child: Icon(Icons.restaurant, size: 60, color: Colors.grey),
                       ),
                     );
                   },
                 ),
               ),
               const SizedBox(height: 20),
-
-              /// 🔹 **Recipe Name & Favorite Icon**
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -86,78 +126,46 @@ class FullRecipeView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  FavoriteIconButton(
-                    recipeId: recipe.id,
-                    recipeName: recipe.name,
-                  ),
+                  FavoriteIconButton(recipeId: recipe.id, recipeName: recipe.name),
                 ],
               ),
               const SizedBox(height: 20),
-
-              /// 🔹 **Ingredients Card**
               Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 4,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      /// Section Title
                       Row(
                         children: const [
                           Icon(Icons.restaurant_menu, color: Colors.deepOrange),
                           SizedBox(width: 8),
-                          Text(
-                            "Ingredients",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.deepOrange,
-                            ),
-                          ),
+                          Text("Ingredients", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepOrange)),
                         ],
                       ),
                       const SizedBox(height: 12),
-
-                      /// Ingredients List
                       ...recipe.ingredients.map((ingredient) {
-                        final isAvailable = recipeData.matchingIngredients
-                            .contains(ingredient.name);
+                        final isAvailable = recipeData.matchingIngredients.contains(ingredient.name);
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 6.0),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Icon(
-                                isAvailable
-                                    ? Icons.check_circle
-                                    : Icons.remove_circle_outline,
+                                isAvailable ? Icons.check_circle : Icons.remove_circle_outline,
                                 size: 18,
-                                color:
-                                    isAvailable ? Colors.green : Colors.orange,
+                                color: isAvailable ? Colors.green : Colors.orange,
                               ),
                               const SizedBox(width: 8),
                               Expanded(child: Text(ingredient.name)),
-
-                              /// Add to Shopping List Button
                               if (!isAvailable)
                                 TextButton.icon(
-                                  onPressed:
-                                      () => addToShoppingList(ingredient.name),
-                                  icon: const Icon(
-                                    Icons.add_shopping_cart,
-                                    size: 16,
-                                  ),
+                                  onPressed: () => addToShoppingList(ingredient.name),
+                                  icon: const Icon(Icons.add_shopping_cart, size: 16),
                                   label: const Text("Add"),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.teal,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                    ),
-                                  ),
+                                  style: TextButton.styleFrom(foregroundColor: Colors.teal),
                                 ),
                             ],
                           ),
@@ -168,36 +176,22 @@ class FullRecipeView extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-
-              /// 🔹 **Instructions Card**
               Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 4,
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      /// Section Title
                       Row(
                         children: const [
                           Icon(Icons.list_alt, color: Colors.deepOrange),
                           SizedBox(width: 8),
-                          Text(
-                            "Instructions",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.deepOrange,
-                            ),
-                          ),
+                          Text("Instructions", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepOrange)),
                         ],
                       ),
                       const SizedBox(height: 12),
-
-                      /// Instructions List
                       ...List.generate(
                         recipe.instructions.length,
                         (index) => Padding(
@@ -205,13 +199,8 @@ class FullRecipeView extends StatelessWidget {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                "${index + 1}. ",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Expanded(child: Text(recipe.instructions[index])),
+                              Text("${index + 1}. ", style: const TextStyle(fontWeight: FontWeight.bold)),
+                              Expanded(child: Text(recipe.instructions[index] ?? '')),
                             ],
                           ),
                         ),

@@ -1,3 +1,4 @@
+// ... top imports unchanged
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -19,19 +20,18 @@ class _PantryViewState extends State<Pantry> {
   bool isLoading = false;
   bool hasMore = true;
 
-  ScrollController _scrollController = ScrollController();
+  final ScrollController _scrollController = ScrollController();
 
-  List<Map<String, dynamic>> ingredients =
-      []; // Store ingredients as {id, name}
+  List<Map<String, dynamic>> ingredients = [];
   List<List<Map<String, dynamic>>> groupedIngredients = [];
   List<bool> isExpanded = [];
 
   List<String> selectedItems = [];
   List<String> myPantryItems = [];
 
-  String? storedToken = GetStorage().read('auth_token');
+  final String? storedToken = GetStorage().read('auth_token');
 
-  @override 
+  @override
   void initState() {
     super.initState();
     fetchMyPantryItems();
@@ -53,15 +53,12 @@ class _PantryViewState extends State<Pantry> {
 
     setState(() => isLoading = true);
 
-    // Calculate the offset based on the current page
     final offset = (currentPage - 1) * pageSize;
-
-    // Update the API URL to use limit and offset
     final url = Uri.parse(
       'http://localhost:4000/ingredients?limit=$pageSize&offset=$offset',
     );
-    final response = await http.get(url);
 
+    final response = await http.get(url);
     if (response.statusCode == 200) {
       final List<dynamic> data = jsonDecode(response.body);
 
@@ -69,19 +66,18 @@ class _PantryViewState extends State<Pantry> {
         hasMore = false;
       }
 
-      // Convert the response to a list of ingredient objects
-      final newIngredients =
-          data.map<Map<String, dynamic>>((item) {
-            return {'id': item['id'], 'name': item['name']};
-          }).toList();
+      final newIngredients = data
+          .map<Map<String, dynamic>>((item) => {
+                'id': item['id'],
+                'name': item['name'],
+              })
+          .toList();
 
-      setState(() {
-        ingredients.addAll(newIngredients);
-        groupedIngredients = _groupIngredients(ingredients, 20);
-        isExpanded = List.generate(groupedIngredients.length, (_) => false);
-      });
+      ingredients.addAll(newIngredients);
+      groupedIngredients = _groupIngredients(ingredients, 20);
+      isExpanded = List.generate(groupedIngredients.length, (_) => false);
     } else {
-      throw Exception('Failed to fetch ingredients');
+      print('Error fetching ingredients');
     }
 
     setState(() => isLoading = false);
@@ -120,23 +116,19 @@ class _PantryViewState extends State<Pantry> {
   ) {
     List<List<Map<String, dynamic>>> grouped = [];
     for (int i = 0; i < list.length; i += groupSize) {
-      grouped.add(
-        list.sublist(
-          i,
-          i + groupSize > list.length ? list.length : i + groupSize,
-        ),
-      );
+      grouped.add(list.sublist(
+        i,
+        i + groupSize > list.length ? list.length : i + groupSize,
+      ));
     }
     return grouped;
   }
 
   void toggleSelection(String item) {
     setState(() {
-      if (selectedItems.contains(item)) {
-        selectedItems.remove(item);
-      } else {
-        selectedItems.add(item);
-      }
+      selectedItems.contains(item)
+          ? selectedItems.remove(item)
+          : selectedItems.add(item);
     });
   }
 
@@ -221,8 +213,8 @@ class _PantryViewState extends State<Pantry> {
   }
 
   void fetchPantryAndMyItemsAgain() async {
-    await fetchMyPantryItems(); // your method to get user's pantry items
-    setState(() {}); // rebuild the UI to reflect changes
+    await fetchMyPantryItems();
+    setState(() {});
   }
 
   @override
@@ -232,132 +224,80 @@ class _PantryViewState extends State<Pantry> {
       body: Stack(
         children: [
           Padding(
-            padding: const EdgeInsets.only(bottom: 70), // for fixed bottom bar
-            child:
-                groupedIngredients.isEmpty
-                    ? Center(child: CircularProgressIndicator())
-                    : ListView.builder(
-                      controller: _scrollController,
-                      itemCount: groupedIngredients.length,
-                      itemBuilder: (context, index) {
-                        final category = 'Category ${index + 1}';
-                        final ingredientsInCategory = groupedIngredients[index];
-                        final isSectionExpanded = isExpanded[index];
+            padding: const EdgeInsets.only(bottom: 70),
+            child: groupedIngredients.isEmpty
+                ? Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    controller: _scrollController,
+                    itemCount: groupedIngredients.length,
+                    itemBuilder: (context, index) {
+                      final category = 'Category ${index + 1}';
+                      final ingredientsGroup = groupedIngredients[index];
+                      final expanded = isExpanded[index];
 
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        child: Card(
+                          elevation: 3,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Card(
-                            elevation: 3,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        category,
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      category,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
                                       ),
-                                      IconButton(
-                                        icon: Icon(
-                                          isSectionExpanded
-                                              ? Icons.expand_less
-                                              : Icons.expand_more,
-                                        ),
-                                        onPressed: () {
-                                          setState(() {
-                                            isExpanded[index] =
-                                                !isExpanded[index];
-                                          });
-                                        },
+                                    ),
+                                    IconButton(
+                                      icon: Icon(
+                                        expanded
+                                            ? Icons.expand_less
+                                            : Icons.expand_more,
                                       ),
-                                    ],
-                                  ),
-                                  AnimatedCrossFade(
-                                    duration: Duration(milliseconds: 300),
-                                    crossFadeState:
-                                        isSectionExpanded
-                                            ? CrossFadeState.showFirst
-                                            : CrossFadeState.showSecond,
-                                    firstChild: Wrap(
-                                      spacing: 8,
-                                      runSpacing: 10,
-                                      children:
-                                          ingredientsInCategory.map((
-                                            ingredient,
-                                          ) {
-                                            return ChoiceChip(
-                                              label: Text(ingredient['name']),
-                                              selected: selectedItems.contains(ingredient['name']),
-                                              onSelected: myPantryItems.contains(ingredient['name']) 
-                                                  ? null // Disable the chip
-                                                  : (_) => toggleSelection(ingredient['name']),
-                                              backgroundColor: myPantryItems.contains(ingredient['name'])
-                                                  ? Colors.grey.shade300
-                                                  : null,
-                                            );
-                                          }).toList(),
+                                      onPressed: () {
+                                        setState(() {
+                                          isExpanded[index] = !expanded;
+                                        });
+                                      },
                                     ),
-                                    secondChild: Wrap(
-                                      spacing: 8,
-                                      runSpacing: 10,
-                                      children:
-                                          ingredientsInCategory.take(8).map((
-                                            ingredient,
-                                          ) {
-                                            return ChoiceChip(
-                                              label: Text(ingredient['name']),
-                                              selected: selectedItems.contains(
-                                                ingredient['name'],
-                                              ),
-                                              onSelected:
-                                                  myPantryItems.contains(
-                                                        ingredient['name'],
-                                                      )
-                                                      ? null // Disable the chip
-                                                      : (_) => toggleSelection(
-                                                        ingredient['name'],
-                                                      ),
-                                              backgroundColor:
-                                                  myPantryItems.contains(
-                                                        ingredient['name'],
-                                                      )
-                                                      ? Colors.grey.shade300
-                                                      : null,
-                                            );
-                                          }).toList(),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                  ],
+                                ),
+                                AnimatedCrossFade(
+                                  duration: Duration(milliseconds: 300),
+                                  crossFadeState: expanded
+                                      ? CrossFadeState.showFirst
+                                      : CrossFadeState.showSecond,
+                                  firstChild: _buildChips(ingredientsGroup),
+                                  secondChild:
+                                      _buildChips(ingredientsGroup.take(8)),
+                                ),
+                              ],
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
+                  ),
           ),
           if (isLoading && hasMore)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
               child: Center(child: CircularProgressIndicator()),
             ),
-
-          // Floating "Add to Pantry" button
           if (selectedItems.isNotEmpty)
             Positioned(
-              bottom: 80, // just above bottom bar
+              bottom: 80,
               left: 0,
               right: 0,
               child: Center(
@@ -374,8 +314,6 @@ class _PantryViewState extends State<Pantry> {
                 ),
               ),
             ),
-
-          // Fixed Bottom Bar
           Positioned(
             bottom: 0,
             left: 0,
@@ -386,40 +324,28 @@ class _PantryViewState extends State<Pantry> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // My Pantry
                   ElevatedButton.icon(
                     onPressed: () async {
-                      await Get.toNamed(
-                        Routes.MY_PANTRY,
-                      ); // wait for MyPantryView to finish
-                      fetchPantryAndMyItemsAgain(); // refresh when coming back
+                      await Get.toNamed(Routes.MY_PANTRY);
+                      fetchPantryAndMyItemsAgain();
                     },
-
                     icon: Icon(Icons.kitchen),
                     label: Text("My Pantry"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.teal,
                       foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
                   ),
-
-                  // See Recipe
                   ElevatedButton(
-                    onPressed: () {
-                      Get.toNamed(Routes.SEE_RECIPE); // adjust as needed
-                    },
+                    onPressed: () => Get.toNamed(Routes.SEE_RECIPE),
                     child: Text("See Recipe"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.deepOrange,
                       foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     ),
                   ),
                 ],
@@ -428,6 +354,24 @@ class _PantryViewState extends State<Pantry> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildChips(Iterable<Map<String, dynamic>> items) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 10,
+      children: items.map((ingredient) {
+        final name = ingredient['name'];
+        final isInPantry = myPantryItems.contains(name);
+
+        return ChoiceChip(
+          label: Text(name),
+          selected: selectedItems.contains(name),
+          onSelected: isInPantry ? null : (_) => toggleSelection(name),
+          backgroundColor: isInPantry ? Colors.grey.shade300 : null,
+        );
+      }).toList(),
     );
   }
 }
