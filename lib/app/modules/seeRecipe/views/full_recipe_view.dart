@@ -11,34 +11,11 @@ class FullRecipeView extends StatelessWidget {
   final RecipeData recipeData;
 
   const FullRecipeView({super.key, required this.recipeData});
-Future<void> addToShoppingList(String itemName) async {
-  try {
-    // 1. Get stored token
-    String? storedToken = GetStorage().read('auth_token');
 
-    // 2. Fetch ingredients list with auth (optional)
-    final response = await http.get(
-      Uri.parse('http://localhost:4000/ingredients?limit=200&offset=0'),
-      headers: {
-        'Authorization': 'Bearer $storedToken',
-      },
-    );
+  Future<void> addToShoppingList(String itemName) async {
+    try {
+      String? storedToken = GetStorage().read('auth_token');
 
-    if (response.statusCode == 200) {
-      final List<dynamic> allIngredients = jsonDecode(response.body);
-
-      // 3. Match ingredient name
-      final matched = allIngredients.firstWhere(
-        (i) => i['name'].toLowerCase() == itemName.toLowerCase(),
-        orElse: () => null,
-      );
-
-      if (matched == null) {
-        Get.snackbar("Not Found", '"$itemName" not found.');
-        return;
-      }
-
-      // 4. Send POST request to cart_ingredients with Authorization
       final postRes = await http.post(
         Uri.parse('http://localhost:4000/cart_ingredients'),
         headers: {
@@ -56,15 +33,11 @@ Future<void> addToShoppingList(String itemName) async {
         final errorMessage = utf8.decode(postRes.bodyBytes);
         Get.snackbar("Error", 'Failed to add "$itemName": $errorMessage');
       }
-    } else {
-      Get.snackbar("Error", "Could not fetch ingredients list.");
+    } catch (e) {
+      print("Add to cart error: $e");
+      Get.snackbar("Error", "Something went wrong.");
     }
-  } catch (e) {
-    print("Add to cart error: $e");
-    Get.snackbar("Error", "Something went wrong.");
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
