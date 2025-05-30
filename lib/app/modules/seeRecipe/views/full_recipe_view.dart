@@ -18,6 +18,14 @@ class FullRecipeView extends StatefulWidget {
 
 class _FullRecipeViewState extends State<FullRecipeView> {
   final Set<String> addedIngredients = {};
+  bool isCooked = false;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchCookedRecipeIds(); // <-- fetch cooked recipe list
+  }
 
   Future<void> addToShoppingList(String itemName) async {
     try {
@@ -53,6 +61,66 @@ class _FullRecipeViewState extends State<FullRecipeView> {
     } catch (e) {
       print("Add to cart error: $e");
       Get.snackbar("Error", "Something went wrong.");
+    }
+  }
+
+  Future<void> markAsCooked() async {
+    try {
+      String? storedToken = GetStorage().read('auth_token');
+      final response = await http.post(
+        Uri.parse('http://localhost:4000/recipes/add_to_cooked_recipes'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $storedToken',
+        },
+        body: jsonEncode({"id": widget.recipeData.recipe.id}),
+      );
+
+      final Map<String, dynamic> resBody = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        setState(() {
+          isCooked = true; // <-- update state so button disables immediately
+        });
+        Get.snackbar("Success", resBody['message'] ?? "Marked as cooked.");
+      } else {
+        Get.snackbar("Info", resBody['message'] ?? "Could not mark as cooked.");
+      }
+    } catch (e) {
+      print("Mark as cooked error: $e");
+      Get.snackbar("Error", "Something went wrong.");
+    }
+  }
+
+  Future<void> fetchCookedRecipeIds() async {
+    try {
+      String? storedToken = GetStorage().read('auth_token');
+      final response = await http.get(
+        Uri.parse('http://localhost:4000/recipes/cooked_recipe_ids'),
+        headers: {'Authorization': 'Bearer $storedToken'},
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        List<dynamic> cookedIds = data['cooked_recipe_ids'];
+
+        setState(() {
+          isCooked = cookedIds.contains(
+            int.tryParse(widget.recipeData.recipe.id),
+          );
+          isLoading = false; // <-- Finish loading
+        });
+      } else {
+        print("Failed to fetch cooked recipe IDs: ${response.body}");
+        setState(() {
+          isLoading = false; // <-- Also end loading on failure
+        });
+      }
+    } catch (e) {
+      print("Error fetching cooked recipe IDs: $e");
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
@@ -221,6 +289,28 @@ class _FullRecipeViewState extends State<FullRecipeView> {
           ),
         ),
       ),
+      bottomNavigationBar:
+          isLoading
+              ? const SizedBox(
+                height: 64,
+                child: Center(child: CircularProgressIndicator()),
+              )
+              : Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: ElevatedButton.icon(
+                  onPressed: isCooked ? null : markAsCooked,
+                  icon: Icon(isCooked ? Icons.check_circle : Icons.check),
+                  label: Text(isCooked ? "Already Cooked" : "Mark As Cooked"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isCooked ? Colors.grey : Colors.deepOrange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
     );
   }
 }
