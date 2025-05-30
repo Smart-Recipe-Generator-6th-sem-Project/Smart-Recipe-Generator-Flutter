@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:babstrap_settings_screen/babstrap_settings_screen.dart';
 import 'package:smart_recipe_generator_flutter/app/modules/Authenticate/views/authenticate_view.dart';
+import 'package:smart_recipe_generator_flutter/app/modules/home/views/Screens/CookedHistoryPage.dart';
 
 class Profile extends StatefulWidget {
   @override
@@ -77,7 +78,20 @@ class _ProfileState extends State<Profile> {
             SettingsGroup(
               backgroundColor: Colors.grey[200]!, // Light grey
               items: [
-                
+                SettingsItem(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CookedHistoryPage(),
+                      ),
+                    );
+                  },
+                  icons: Icons.history,
+                  title: "My Cooked History",
+                  subtitle: "See the recipes you've cooked till now.",
+                ),
+
                 SettingsItem(
                   onTap: () {
                     setState(() {
