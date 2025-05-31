@@ -25,8 +25,6 @@ class CartController extends GetxController {
 
     if (response.statusCode == 200) {
       cartIngredients.value = jsonDecode(response.body);
-    } else {
-      Get.snackbar("Error", "Failed to load cart ingredients.");
     }
   } catch (e) {
     print("Fetch cart error: $e");
