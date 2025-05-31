@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:smart_recipe_generator_flutter/app/models/recipe.dart';
 import 'package:smart_recipe_generator_flutter/app/modules/home/views/Screens/SeeMoreRecipeScreen.dart';
 import 'package:smart_recipe_generator_flutter/app/modules/recipe_detail/views/recipe_detail_view.dart';
@@ -10,8 +11,10 @@ bool isLoggedIn = true;
 
 List<Recipe> allRecipes = [];
 List<Recipe> trendingRecipes = [];
+List<Recipe> recommendedRecipes = [];
 bool isLoading = false;
 bool isLoadingTrending = false;
+bool isLoadingRecommended = false;
  
 class Home extends StatefulWidget {
   @override
@@ -34,6 +37,7 @@ class _HomeState extends State<Home> {
       });
     });
     fetchTrendingRecipes();
+    fetchRecommendedRecipes();
   }
 
   Future<List<Recipe>> fetchRecipes({int limit = 10, int offset = 0}) async {
@@ -81,6 +85,46 @@ class _HomeState extends State<Home> {
         });
       }
     }
+
+  Future<void> fetchRecommendedRecipes({int limit = 10, int offset = 0}) async {
+    setState(() {
+      isLoadingRecommended = true; // loading starts
+    });
+
+    final uri = Uri.parse(
+      'http://localhost:4000/recipes/recommended_recipes',
+    ).replace(queryParameters: {'limit': '$limit', 'offset': '$offset'});
+
+    try {
+      final token = GetStorage().read("auth_token");
+      final response = await http.get(uri,
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+      );
+      print('Response body: ${response.body}');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final List<dynamic> data = jsonDecode(response.body);
+
+        setState(() {
+          recommendedRecipes = data.map((json) => Recipe.fromJson(json)).toList();
+          isLoadingRecommended = false; // loading ends
+          print('Fetched ${recommendedRecipes.length} recommended recipes');
+        });
+      } else {
+        print('Failed to load trending recipes: ${response.statusCode}');
+        setState(() {
+          isLoadingRecommended = false;
+        });
+      }
+    } catch (e) {
+      print('Error fetching trending recipes: $e');
+      setState(() {
+        isLoadingRecommended = false;
+      });
+    }
+  }
 
   void _addIngredient() {
     if (_ingredientController.text.isNotEmpty) {
@@ -390,10 +434,14 @@ void _findRecipesFromPantry() {
                               'Trending Recipes',
                               trendingRecipes,
                             ),
-                        _buildRecipeSection(
-                          'Based on Your Past Preferences',
-                          allRecipes,
-                        ),
+                        isLoadingRecommended
+                              ? Center(child: CircularProgressIndicator())
+                              : recommendedRecipes.isEmpty
+                              ? Text("No recommendations found.")
+                              : _buildRecipeSection(
+                                'Based on your Past Preferences',
+                                recommendedRecipes,
+                              ),
                         SizedBox(height: 24),
                       ],
                     ),
