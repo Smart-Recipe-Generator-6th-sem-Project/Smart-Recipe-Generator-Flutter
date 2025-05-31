@@ -128,10 +128,11 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
                 ),
 
                 // Love Icon
-                FavoriteIconButton(
-                  recipeId: widget.recipe.id,
-                  recipeName: widget.recipe.name,
-                ),
+                if (storedToken != null)
+                  FavoriteIconButton(
+                    recipeId: widget.recipe.id,
+                    recipeName: widget.recipe.name,
+                  ),
               ],
             ),
 
