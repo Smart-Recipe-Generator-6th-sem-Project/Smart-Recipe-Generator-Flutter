@@ -15,6 +15,7 @@ class Profile extends StatefulWidget {
 
 class _ProfileState extends State<Profile> {
   String userName = "Guest";
+  String? storedToken = GetStorage().read('auth_token');
   final box = GetStorage();
 
   @override
@@ -24,7 +25,6 @@ class _ProfileState extends State<Profile> {
   }
 
   Future<void> fetchUserData() async {
-    String? storedToken = GetStorage().read('auth_token');
 
     final String apiUrl = "http://127.0.0.1:4000/users/me";
     final url = Uri.parse(apiUrl);
@@ -78,19 +78,20 @@ class _ProfileState extends State<Profile> {
             SettingsGroup(
               backgroundColor: Colors.grey[200]!, // Light grey
               items: [
-                SettingsItem(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CookedHistoryPage(),
-                      ),
-                    );
-                  },
-                  icons: Icons.history,
-                  title: "My Cooked History",
-                  subtitle: "See the recipes you've cooked till now.",
-                ),
+                if (storedToken != null)
+                  SettingsItem(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CookedHistoryPage(),
+                        ),
+                      );
+                    },
+                    icons: Icons.history,
+                    title: "My Cooked History",
+                    subtitle: "See the recipes you've cooked till now.",
+                  ),
 
                 SettingsItem(
                   onTap: () {
@@ -181,7 +182,6 @@ class _ProfileState extends State<Profile> {
   }
 
   Future<void> _logout(BuildContext context) async {
-    String? storedToken = GetStorage().read('auth_token');
     if (storedToken == null) {
       print("No token found, redirecting to login...");
       _navigateToLogin(context);
