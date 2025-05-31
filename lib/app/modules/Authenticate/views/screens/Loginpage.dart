@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:get_storage/get_storage.dart';
 import 'package:smart_recipe_generator_flutter/app/modules/home/views/home_view.dart';
+import 'package:smart_recipe_generator_flutter/app/modules/onboarding/views/introduction_animation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.controller});
@@ -115,6 +116,18 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => IntroductionAnimationScreen(startAtEnd: true)),
+            );
+          },
+        ),
+        title: Text("Login Page"),
+      ),
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
         child: Padding(

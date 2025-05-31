@@ -12,7 +12,9 @@ import 'package:flutter/material.dart';
 
 
 class IntroductionAnimationScreen extends StatefulWidget {
-  const IntroductionAnimationScreen({Key? key}) : super(key: key);
+  final bool startAtEnd;
+  const IntroductionAnimationScreen({Key? key, this.startAtEnd = false})
+    : super(key: key);
 
   @override
   _IntroductionAnimationScreenState createState() =>
@@ -25,10 +27,19 @@ class _IntroductionAnimationScreenState
 
   @override
   void initState() {
-    _animationController =
-        AnimationController(vsync: this, duration: Duration(seconds: 8));
-    _animationController?.animateTo(0.0);
     super.initState();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 8),
+    );
+
+    if (widget.startAtEnd) {
+      // Jump directly to the final animation step
+      _animationController?.value = 0.8;
+    } else {
+      _animationController?.animateTo(0.0);
+    }
   }
 
   @override
