@@ -436,8 +436,6 @@ void _findRecipesFromPantry() {
                             ),
                         isLoadingRecommended
                               ? Center(child: CircularProgressIndicator())
-                              : recommendedRecipes.isEmpty
-                              ? Text("No recommendations found.")
                               : _buildRecipeSection(
                                 'Based on your Past Preferences',
                                 recommendedRecipes,
