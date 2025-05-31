@@ -20,6 +20,7 @@ class RecipeDetailView extends StatefulWidget {
 class _RecipeDetailViewState extends State<RecipeDetailView> {
   bool isCooked = false;
   bool isLoading = true;
+  String? storedToken = GetStorage().read('auth_token');
 
   @override
   void initState() {
@@ -29,7 +30,6 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
 
   Future<void> markAsCooked() async {
     try {
-      String? storedToken = GetStorage().read('auth_token');
       final response = await http.post(
         Uri.parse('http://localhost:4000/recipes/add_to_cooked_recipes'),
         headers: {
@@ -230,27 +230,32 @@ class _RecipeDetailViewState extends State<RecipeDetailView> {
         ),
       ),
       bottomNavigationBar:
-          isLoading
-              ? const SizedBox(
-                height: 64,
-                child: Center(child: CircularProgressIndicator()),
-              )
-              : Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: ElevatedButton.icon(
-                  onPressed: isCooked ? null : markAsCooked,
-                  icon: Icon(isCooked ? Icons.check_circle : Icons.check),
-                  label: Text(isCooked ? "Already Cooked" : "Mark As Cooked"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isCooked ? Colors.grey : Colors.deepOrange,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+          storedToken != null
+              ? (isLoading
+                  ? const SizedBox(
+                    height: 64,
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                  : Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: ElevatedButton.icon(
+                      onPressed: isCooked ? null : markAsCooked,
+                      icon: Icon(isCooked ? Icons.check_circle : Icons.check),
+                      label: Text(
+                        isCooked ? "Already Cooked" : "Mark As Cooked",
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            isCooked ? Colors.grey : Colors.deepOrange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ),
+                  ))
+              : null,
     );
   }
 }
