@@ -15,15 +15,11 @@ class HomeView extends StatefulWidget {
 
 class HomeScreenState extends State<HomeView> {
   int _selectedIndex = 1;
-  String?
-  storedToken; // Assume this gets set somewhere (e.g. from secure storage)
+  String? storedToken = GetStorage().read('auth_token');
 
   @override
   void initState() {
     super.initState();
-    // Simulate getting token, replace this with your actual logic
-    // Example: SharedPreferences or SecureStorage
-    storedToken = null; // or your actual token-fetching logic
   }
 
   @override
