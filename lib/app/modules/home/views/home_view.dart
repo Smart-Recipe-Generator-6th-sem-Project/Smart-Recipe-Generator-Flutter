@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flashy_tab_bar2/flashy_tab_bar2.dart';
+import 'package:get_storage/get_storage.dart';
 import './Screens/pantry.dart' as firstTab;
 import './Screens/home.dart' as secondTab;
 import 'Screens/favorite.dart' as thirdTab;
@@ -13,17 +14,44 @@ class HomeView extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeView> {
-  int _selectedIndex = 1; // Track the selected tab
+  int _selectedIndex = 1;
+  String?
+  storedToken; // Assume this gets set somewhere (e.g. from secure storage)
+
+  @override
+  void initState() {
+    super.initState();
+    // Simulate getting token, replace this with your actual logic
+    // Example: SharedPreferences or SecureStorage
+    storedToken = null; // or your actual token-fetching logic
+  }
 
   @override
   Widget build(BuildContext ctx) {
-     final List<Widget> _screens = [
-    _buildTabNavigator(firstTab.Pantry()),
-    _buildTabNavigator(secondTab.Home()),
-    _buildTabNavigator(thirdTab.Favorite()),
-    _buildTabNavigator(fifthTab.Cart()),
-    _buildTabNavigator(fourthTab.Profile()),
-  ];
+    final List<Widget> _screens = [
+      _buildTabNavigator(firstTab.Pantry()),
+      _buildTabNavigator(secondTab.Home()),
+      if (storedToken != null) _buildTabNavigator(thirdTab.Favorite()),
+      if (storedToken != null) _buildTabNavigator(fifthTab.Cart()),
+      _buildTabNavigator(fourthTab.Profile()),
+    ];
+
+    final List<FlashyTabBarItem> tabItems = [
+      FlashyTabBarItem(icon: Icon(Icons.food_bank), title: Text('Pantry')),
+      FlashyTabBarItem(icon: Icon(Icons.home), title: Text('Home')),
+      if (storedToken != null)
+        FlashyTabBarItem(icon: Icon(Icons.bookmark), title: Text('Favorites')),
+      if (storedToken != null)
+        FlashyTabBarItem(icon: Icon(Icons.shopping_cart), title: Text('Cart')),
+      FlashyTabBarItem(
+        icon: Icon(Icons.account_circle_outlined),
+        title: Text('Profile'),
+      ),
+    ];
+
+    // Ensure selectedIndex stays within the valid tab range
+    if (_selectedIndex >= tabItems.length) _selectedIndex = 0;
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -42,10 +70,7 @@ class HomeScreenState extends State<HomeView> {
           ],
         ),
       ),
-      body: IndexedStack(
-        index: _selectedIndex, // Keeps state of all screens
-        children: _screens,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _screens),
       bottomNavigationBar: FlashyTabBar(
         selectedIndex: _selectedIndex,
         showElevation: true,
@@ -54,32 +79,27 @@ class HomeScreenState extends State<HomeView> {
             _selectedIndex = index;
           });
         },
-        items: [
-          FlashyTabBarItem(icon: Icon(Icons.food_bank), title: Text('Pantry')),
-          FlashyTabBarItem(icon: Icon(Icons.home), title: Text('Home')),
-          FlashyTabBarItem(icon: Icon(Icons.bookmark), title: Text('Favorites')),
-          FlashyTabBarItem(icon: Icon(Icons.shopping_cart), title: Text('Cart')), 
-          FlashyTabBarItem(icon: Icon(Icons.account_circle_outlined), title: Text('Profile')),
-        ],
+        items: tabItems,
       ),
       floatingActionButton: FloatingActionButton(
-  backgroundColor: Colors.red,
-  onPressed: () {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return alert.RecipeAlert(); 
-      },
-    );
-  },
-  child: const Icon(Icons.add),
-),
-floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        backgroundColor: Colors.red,
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return alert.RecipeAlert();
+            },
+          );
+        },
+        child: const Icon(Icons.add),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
+
   Widget _buildTabNavigator(Widget child) {
-  return Navigator(
-    onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) => child),
-  );
-}
+    return Navigator(
+      onGenerateRoute: (settings) => MaterialPageRoute(builder: (_) => child),
+    );
+  }
 }
