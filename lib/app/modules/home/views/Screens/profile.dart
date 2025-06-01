@@ -223,21 +223,23 @@ class _ProfileState extends State<Profile> {
   void _showAboutDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("About Smart Chef"),
-        content: const Text(
-          "Smart Chef is an intelligent recipe suggestion app.\n\n"
-          "It helps you find recipes based on what you already have in your pantry, "
-          "helps reduce food waste, and improves your cooking experience with smart suggestions."
-          "B & N 6th Sem Project",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text("Close"),
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text("About Smart Chef"),
+          content: const Text(
+            "Smart Chef is an intelligent recipe suggestion app.\n\n"
+            "It helps you find recipes based on what you already have in your pantry, "
+            "helps reduce food waste, and improves your cooking experience with smart suggestions.\n"
+            "B & N 6th Sem Project",
           ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text("Close"),
+            ),
+          ],
+        );
+      },
     );
   }
 }
